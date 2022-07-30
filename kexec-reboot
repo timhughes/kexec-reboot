@@ -1,0 +1,61 @@
+#!/bin/bash 
+
+kernel_flag=
+kernel_version=
+reuse_flag=
+reuse=
+dry_run_flag=
+
+print_usage(){
+    printf "Usage: %s: [-k kernel_version] [-c \"command line args\"] [-d]\n" $0
+    echo
+    printf "  %-20s # %s\n" "-k <string>" "kernel version in the format given by \`uname -r\`"
+    printf "  %-20s # %s\n" "-c <string>" "kernel arguments. If not provided then will default to the current running kernel's args"
+    printf "  %-20s # %s\n" "-d" "dry-run, just print out what would happen"
+    echo
+}
+
+
+while getopts "k:c:dh" name
+do
+    case $name in
+    k)  kernel_flag=1
+        kernel_version="$OPTARG";;
+    c)  cmdline_flag=1
+        cmdline_value="$OPTARG";;
+    d)  dry_run_flag=1;;
+    h)  print_usage
+         exit 0;;
+    ?)  print_usage
+         exit 2;;
+    esac
+done
+
+if [ -z "${kernel_flag}" ]; then
+    kernel_version=$(uname -r)
+fi
+if [ ! -f "/boot/vmlinuz-${kernel_version}" ]; then
+    echo "Kernel ${kernel_version} does not exist on system"
+    print_usage
+    exit 1
+fi	
+
+if [ ! -z "${cmdline_flag}" ]; then
+    args="--append=\"${cmdline_value}\""
+else
+    args="--reuse-cmdline"
+fi
+
+command="kexec -l /boot/vmlinuz-${kernel_version} --initrd=/boot/initramfs-${kernel_version}.img ${args}"
+
+if [ ! -z "$dry_run_flag" ]; then
+    echo Dry run:
+    echo $command
+    echo "reboot"
+    exit 0
+fi
+
+echo $command
+$command
+echo reboot
+reboot
