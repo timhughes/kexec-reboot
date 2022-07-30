@@ -1,5 +1,6 @@
 # kexec-reboot
 
+Reboot a linux system using kexec
 
 ```
 Usage: ./kexec-reboot: [-k kernel_version] [-c "command line args"] [-d]
